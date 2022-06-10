@@ -26,6 +26,7 @@ wait_for_job() {
         ;;
       notStarted | running | '')
         log "Job still pending (status: $status)..."
+        log "$status_json"
         sleep 5
         ;;
       *)
@@ -58,18 +59,15 @@ while read -r project_name; do
   wait_for_job "$status_location" "$source_api_key"
   result_url="$(echo "$status_json" | jq -r '.resultUrl')"
 
-  # TODO: Remove jq workaround below that deletes Prompts from the export
   log "Export job succeeded. Downloading results from $result_url..."
   curl -s \
     -H "Ocp-Apim-Subscription-Key: $source_api_key" \
     -H 'Content-Type: application/json' \
-    "$result_url" | jq 'del(.Assets.Qnas[].Dialog.Prompts[])' > ./tmpresults.json
+    -o ./tmpresults.json "$result_url" 
 
   log "Starting import of project $project_name to destination account $destination_resource_name..."
   # TODO: Address below import limitations. 
   # - Cannot import qna pair with ":" or "|" in metadata
-  # - Cannot import qna pair with Prompts
-  # - Cannot import synonyms
   url="${destination_api_endpoint}language/query-knowledgebases/projects/${project_name}/:import?api-version=2021-10-01&format=json"
   status_location="$(curl -s -i -d @./tmpresults.json \
     -H "Ocp-Apim-Subscription-Key: $destination_api_key" \
