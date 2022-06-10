@@ -68,5 +68,4 @@ copy_model() {
 load_api_config "$source_resource_name" "$source_rg" "$destination_resource_name" "$destination_rg"
 
 copy_configuration service
-copy_configuration policy
 copy_model
